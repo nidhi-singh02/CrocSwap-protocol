@@ -330,7 +330,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
 
     /// @notice Validate that the pool is stable swap and bid ticks are in correct range for providing concentrated liquidity.
     /// @dev This is a helper function to validate the concentrated liquidity minting and burning.
-    /// @dev Stable Swap pools are only for stable pairs.
+    /// @dev Stable swap pools are only for stable pairs.
     /// @param stableSwapPool Whether the pool is a stable swap pool.
     /// @param bidTick The price tick index of the lower boundary of the range order.
     /// @param askTick The price tick index of the upper boundary of the range order.

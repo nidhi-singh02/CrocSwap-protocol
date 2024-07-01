@@ -241,6 +241,7 @@ contract PoolRegistry is StorageLayout {
         assertPoolFresh(base, quote, poolIdx);
         PoolSpecs.Pool memory template = queryTemplate(poolIdx);
         template.protocolTake_ = protocolTakeRate_;
+        // Only the authority can create stable swap pools
         if(msg.sender == authority_) {
             template.stableSwap_ = true;
         }

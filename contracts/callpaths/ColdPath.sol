@@ -116,7 +116,7 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
 
         emit CrocEvents.CrocColdCmd(cmd);
     }
-        
+    
     /* @notice Initializes the pool type for the pair.
      * @param base The base token in the pair.
      * @param quote The quote token in the pair.
