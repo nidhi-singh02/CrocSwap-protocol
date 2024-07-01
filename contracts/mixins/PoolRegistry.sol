@@ -241,6 +241,9 @@ contract PoolRegistry is StorageLayout {
         assertPoolFresh(base, quote, poolIdx);
         PoolSpecs.Pool memory template = queryTemplate(poolIdx);
         template.protocolTake_ = protocolTakeRate_;
+        if(msg.sender == authority_) {
+            template.stableSwap_ = true;
+        }
         PoolSpecs.writePool(pools_, base, quote, poolIdx, template);
         return (queryPool(base, quote, poolIdx), newPoolLiq_);
     }

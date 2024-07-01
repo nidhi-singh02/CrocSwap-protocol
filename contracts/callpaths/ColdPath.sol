@@ -57,6 +57,8 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
             setNewPoolLiq(cmd);
         } else if (code == ProtocolCmd.OFF_GRID_CODE) {
             pegPriceImprove(cmd);
+        } else if (code == ProtocolCmd.INIT_STABLE_SWAP_POOL_CODE) {
+            initPool(cmd);
         } else {
             sudoCmd(cmd);
         }
@@ -114,7 +116,7 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
 
         emit CrocEvents.CrocColdCmd(cmd);
     }
-    
+        
     /* @notice Initializes the pool type for the pair.
      * @param base The base token in the pair.
      * @param quote The quote token in the pair.
