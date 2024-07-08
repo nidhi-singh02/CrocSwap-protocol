@@ -60,6 +60,7 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
         } else {
             sudoCmd(cmd);
         }
+        
         emit CrocEvents.CrocColdProtocolCmd(cmd);
     }
 
