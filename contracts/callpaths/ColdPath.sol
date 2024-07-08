@@ -57,7 +57,7 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
             setNewPoolLiq(cmd);
         } else if (code == ProtocolCmd.OFF_GRID_CODE) {
             pegPriceImprove(cmd);
-        }else {
+        } else {
             sudoCmd(cmd);
         }
         emit CrocEvents.CrocColdProtocolCmd(cmd);
