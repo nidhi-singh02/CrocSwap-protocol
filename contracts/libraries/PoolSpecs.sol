@@ -53,8 +53,8 @@ library PoolSpecs {
      *                     significant bit, which if on checks oracle permission on every
      *                     pool related call. Otherwise pool is permissionless. 
      * 
-     * @param stableSwap_ A flag to indicate if the pool is a stable swap pool. 
-     *                    If set to true, the pool is a stable swap pool. */
+     * @param bidTick_ The tick index of the stable swap pool's bid price.
+     * @param askTick_ The tick index of the stable swap pool's ask price. */
     struct Pool {
         uint8 schema_;
         uint16 feeRate_;
@@ -63,7 +63,8 @@ library PoolSpecs {
         uint8 jitThresh_;
         uint8 knockoutBits_;
         uint8 oracleFlags_;
-        bool stableSwap_;
+        int24 bidTick_;
+        int24 askTick_;
     }
 
     uint8 constant BASE_SCHEMA = 1;

@@ -156,6 +156,9 @@ contract StorageLayout {
     address treasury_;
     uint64 treasuryStartTime_;
 
+    // The index of the stable swap pool in the pool registry.
+    uint256 internal stableSwapPoolIdx_;
+
     // Since take rate is represented in 1/256, this represents a maximum possible take 
     // rate of 50%.
     uint8 MAX_TAKE_RATE = 128;

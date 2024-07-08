@@ -57,12 +57,9 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
             setNewPoolLiq(cmd);
         } else if (code == ProtocolCmd.OFF_GRID_CODE) {
             pegPriceImprove(cmd);
-        } else if (code == ProtocolCmd.INIT_STABLE_SWAP_POOL_CODE) {
-            initPool(cmd);
-        } else {
+        }else {
             sudoCmd(cmd);
         }
-
         emit CrocEvents.CrocColdProtocolCmd(cmd);
     }
 
@@ -174,15 +171,18 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
      * @param tickSize The pool's grid size in ticks.
      * @param jitThresh The minimum resting time (in seconds) for concentrated LPs.
      * @param knockout The knockout bits for the pool template.
-     @ @param oracleFlags The oracle bit flags if a permissioned pool. */
+     * @param oracleFlags The oracle bit flags if a permissioned pool. 
+     * @param bidTick The tick index of the stable swap pool's bid price.
+     * @param askTick The tick index of the stable swap pool's ask price.
+     * @param isStableSwapPool The stable swap pool flag. */
     function setTemplate (bytes calldata input) private {
         (, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh,
-         uint8 knockout, uint8 oracleFlags) =
-            abi.decode(input, (uint8, uint256, uint16, uint16, uint8, uint8, uint8));
+         uint8 knockout, uint8 oracleFlags,int24 bidTick, int24 askTick, bool isStableSwapPool) =
+            abi.decode(input, (uint8, uint256, uint16, uint16, uint8, uint8, uint8, int24, int24, bool));
         
         emit CrocEvents.SetPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout,
                                         oracleFlags);
-        setPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout, oracleFlags);
+        setPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout, oracleFlags, bidTick, askTick, isStableSwapPool);
     }
 
     function setTakeRate (bytes calldata input) private {
@@ -225,12 +225,14 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
      * @param tickSize The pool's grid size in ticks.
      * @param jitThresh The minimum resting time (in seconds) for concentrated LPs in
      *                  in the pool.
-     * @param knockout The knockout bit flags for the pool. */
+     * @param knockout The knockout bit flags for the pool. 
+     * @param bidTick The tick index of the stable swap pool's bid price.
+     * @param askTick The tick index of the stable swap pool's ask price.*/
     function revisePool (bytes calldata cmd) private {
         (, address base, address quote, uint256 poolIdx,
-         uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout) =
-            abi.decode(cmd, (uint8,address,address,uint256,uint16,uint16,uint8,uint8));
-        setPoolSpecs(base, quote, poolIdx, feeRate, tickSize, jitThresh, knockout);
+         uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout, int24 bidTick, int24 askTick) =
+            abi.decode(cmd, (uint8,address,address,uint256,uint16,uint16,uint8,uint8, int24, int24));
+        setPoolSpecs(base, quote, poolIdx, feeRate, tickSize, jitThresh, knockout, bidTick, askTick);
     }
 
     /* @notice Set off-grid price improvement.

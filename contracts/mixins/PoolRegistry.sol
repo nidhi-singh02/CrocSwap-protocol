@@ -119,11 +119,19 @@ contract PoolRegistry is StorageLayout {
      * @param jitThresh The minimum time (in seconds) a concentrated LP position must 
      *                  rest before it can be burned.
      * @param knockout  The knockout liquidity bit flags for the pool. (See KnockoutLiq library)
-     * @param oracleFlags The permissioned oracle flags for the pool. */
+     * @param oracleFlags The permissioned oracle flags for the pool.
+     * @param bidTick The tick index of the stable swap pool's bid price.
+     * @param askTick The tick index of the stable swap pool's ask price. 
+     * @param isStableSwapPool The stable swap pool flag. */
     function setPoolTemplate (uint256 poolIdx, uint16 feeRate, uint16 tickSize,
-                              uint8 jitThresh, uint8 knockout, uint8 oracleFlags)
+                              uint8 jitThresh, uint8 knockout, uint8 oracleFlags, int24 bidTick, int24 askTick, bool isStableSwapPool)
         internal {
         PoolSpecs.Pool storage templ = templates_[poolIdx];
+        if(isStableSwapPool) {
+            stableSwapPoolIdx_ = poolIdx;
+            templ.bidTick_ = bidTick;
+            templ.askTick_ = askTick;
+        }
         templ.schema_ = PoolSpecs.BASE_SCHEMA;
         templ.feeRate_ = feeRate;
         templ.tickSize_ = tickSize;
@@ -159,11 +167,18 @@ contract PoolRegistry is StorageLayout {
      * @param tickSize The tick grid size for range orders in the pool.
      * @param jitThresh The minimum time (in seconds) a concentrated LP position must 
      *                  rest before it can be burned.
-     * @param knockoutBits The knockout liquiidity parameter bit flags for the pool. */
+     * @param knockoutBits The knockout liquiidity parameter bit flags for the pool. 
+     * @param bidTick The tick index of the stable swap pool's bid price.
+     * @param askTick The tick index of the stable swap pool's ask price. */
     function setPoolSpecs (address base, address quote, uint256 poolIdx,
                            uint16 feeRate, uint16 tickSize, uint8 jitThresh,
-                           uint8 knockoutBits) internal {
+                           uint8 knockoutBits, int24 bidTick, int24 askTick) internal {
         PoolSpecs.Pool storage pool = selectPool(base, quote, poolIdx);
+        // No need to check for 0 poolIdx as selectPool() will revert if the pool doesn't exist.
+        if(poolIdx == stableSwapPoolIdx_) {
+            pool.bidTick_ = bidTick;
+            pool.askTick_ = askTick;
+        }
         pool.feeRate_ = feeRate;
         pool.tickSize_ = tickSize;
         pool.jitThresh_ = jitThresh;
@@ -241,10 +256,6 @@ contract PoolRegistry is StorageLayout {
         assertPoolFresh(base, quote, poolIdx);
         PoolSpecs.Pool memory template = queryTemplate(poolIdx);
         template.protocolTake_ = protocolTakeRate_;
-        // Only the authority can create stable swap pools
-        if(msg.sender == authority_) {
-            template.stableSwap_ = true;
-        }
         PoolSpecs.writePool(pools_, base, quote, poolIdx, template);
         return (queryPool(base, quote, poolIdx), newPoolLiq_);
     }

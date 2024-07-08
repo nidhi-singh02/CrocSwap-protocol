@@ -151,7 +151,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                    uint128 limitLower, uint128 limitHigher) internal returns
         (int128, int128) {
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
-        _validateConcentratedLiq(pool.head_.stableSwap_,bidTick, askTick);
+        _validateConcentratedLiq(poolIdx,bidTick, askTick, pool.head_);
         verifyPermitMint(pool, base, quote, bidTick, askTick, liq);
 
         return mintOverPool(bidTick, askTick, liq, pool, limitLower, limitHigher,
@@ -178,7 +178,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                    uint128 limitLower, uint128 limitHigher)
         internal returns (int128, int128) {
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
-        _validateConcentratedLiq(pool.head_.stableSwap_, bidTick, askTick);
+        _validateConcentratedLiq(poolIdx, bidTick, askTick, pool.head_);
         verifyPermitBurn(pool, base, quote, bidTick, askTick, liq);
         
         return burnOverPool(bidTick, askTick, liq, pool, limitLower, limitHigher,
@@ -330,15 +330,13 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
 
     /// @notice Validate that the pool is stable swap and bid ticks are in correct range for providing concentrated liquidity.
     /// @dev This is a helper function to validate the concentrated liquidity minting and burning.
-    /// @dev Stable swap pools are only for stable pairs.
-    /// @param stableSwapPool Whether the pool is a stable swap pool.
+    /// @param poolIdx The index of the pool type.
     /// @param bidTick The price tick index of the lower boundary of the range order.
     /// @param askTick The price tick index of the upper boundary of the range order.
-    function _validateConcentratedLiq (bool stableSwapPool, int24 bidTick, int24 askTick) internal pure {
-        if (stableSwapPool) {
-            // TODO put the correct number here
-            require(bidTick >= 95, "INVALID BID TICK");
-            require(askTick <= 105, "INVALID ASK TICK");
+    function _validateConcentratedLiq (uint256 poolIdx, int24 bidTick, int24 askTick, PoolSpecs.Pool memory pool) internal view {
+        if (poolIdx == stableSwapPoolIdx_) {
+            require(bidTick >= pool.bidTick_, "INVALID BID TICK");
+            require(askTick <= pool.askTick_, "INVALID ASK TICK");
         }
         else revert("NOT STABLE SWAP");
     }
