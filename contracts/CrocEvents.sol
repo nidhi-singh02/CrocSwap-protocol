@@ -26,14 +26,17 @@ library CrocEvents {
     event DisablePoolTemplate (uint256 indexed poolIdx);
 
     /* @notice Emitted when a new template is written or overwrriten.
+     * @param isStableSwapPool Indicates if the pool is a stable swap pool.
      * @param poolIdx The pool type index being disabled.
      * @param feeRate The swap fee rate for the pool (represented in units of 0.0001%)
      * @param tickSize The minimum tick size for range orders in the pool.
      * @param jitThresh The JIT liquiidty TTL time in the pool (represented in 10s of seconds)
      * @param knockout The knockout liquidity paramter bits (see KnockoutLiq library for more detail)
-     * @param oracleFlags The permissioned pool oracle flags if this is setup as a permissioned pool. */
-    event SetPoolTemplate (uint256 indexed poolIdx, uint16 feeRate, uint16 tickSize,
-                           uint8 jitThresh, uint8 knockout, uint8 oracleFlags);
+     * @param oracleFlags The permissioned pool oracle flags if this is setup as a permissioned pool. 
+     * @param bidTick The bid tick index of the stable swap pool.
+     * @param askTick The ask tick index of the stable swap pool. */
+    event SetPoolTemplate (bool indexed isStableSwapPool, uint256 indexed poolIdx, uint16 feeRate, uint16 tickSize,
+                           uint8 jitThresh, uint8 knockout, uint8 oracleFlags, int24 bidTick, int24 askTick);
 
     /* @notice Emitted when a previously created pool with a pre-existing protocol take rate is re-
      *         sychronized to the current dex-wide protocol take rate setting. 
