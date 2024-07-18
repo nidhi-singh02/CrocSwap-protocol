@@ -341,9 +341,9 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
     function _validateConcentratedLiq (address base, address quote, uint256 poolIdx, int24 bidTick, int24 askTick, PoolSpecs.Pool memory pool) internal view {
         if (poolIdx == stableSwapPoolIdx_) {
 
-            // get the decimal of base and quote token.
-            uint8 baseTokenDecimal = ERC20(base).decimals();
-            uint8 quoteTokenDecimal = ERC20(quote).decimals();
+            // get the decimal of the base and quote token.
+            uint8 baseTokenDecimal = getTokenDecimals(base);
+            uint8 quoteTokenDecimal = getTokenDecimals(quote);
 
             // get the price of quote token in terms of base token at the bid and ask tick.
             uint256 priceRootAtBidTick = bidTick.getSqrtRatioAtTick();
@@ -365,5 +365,17 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             require(priceRootAtAskTick <= pool.priceCeiling_, "INVALID ASK TICK");
         }
         else revert("NOT STABLE SWAP");
+    }
+
+    /// @notice Get the decimal of the token.
+    /// @dev If the token does not have decimal, will return 18 as default.
+    /// @param token The token address.
+    /// @return The decimal of the token.
+    function getTokenDecimals(address token) public view returns (uint8) {
+        try ERC20(token).decimals() returns (uint8 tokenDecimals) {
+            return tokenDecimals;
+        } catch {
+            return 18;
+        }
     }
 }
