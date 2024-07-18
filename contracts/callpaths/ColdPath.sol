@@ -148,7 +148,8 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
         }
 
         bytes memory bytecode = type(CrocLpErc20).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(base, quote, poolIdx));
+        bool stableSwap = poolIdx == stableSwapPoolIdx_;
+        bytes32 salt = keccak256(abi.encodePacked(base, quote, stableSwap));
         address pair;
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
