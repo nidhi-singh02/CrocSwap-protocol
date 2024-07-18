@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.19;
 
+import '../libraries/BaseERC20.sol';
 import '../libraries/Directives.sol';
 import '../libraries/Encoding.sol';
 import '../libraries/TokenFlow.sol';
@@ -33,6 +34,7 @@ import '../CrocEvents.sol';
  *         within the primary CrocSwap contract. */
 contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
 
+    using TickMath for int24;
     using SafeCast for uint128;
     using TokenFlow for TokenFlow.PairSeq;
     using CurveMath for CurveMath.CurveState;
@@ -87,7 +89,26 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                        uint128 limitLower, uint128 limitHigher,
                        address lpConduit)
         private returns (int128, int128) {
-        if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
+        if (code == UserCmd.MINT_RANGE_LIQ_LP) {
+            return mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
+                        limitLower, limitHigher);
+        } else if (code == UserCmd.MINT_RANGE_BASE_LP) {
+            return mintConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
+                           limitLower, limitHigher);
+        } else if (code == UserCmd.MINT_RANGE_QUOTE_LP) {
+            return mintConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
+                           limitLower, limitHigher);
+            
+        } else if (code == UserCmd.BURN_RANGE_LIQ_LP) {
+            return burnConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
+                        limitLower, limitHigher);
+        } else if (code == UserCmd.BURN_RANGE_BASE_LP) {
+            return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
+                           limitLower, limitHigher);
+        } else if (code == UserCmd.BURN_RANGE_QUOTE_LP) {
+            return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
+                           limitLower, limitHigher);
+        } else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
             return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
         } else if (code == UserCmd.MINT_AMBIENT_BASE_LP) {
             return mintAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
@@ -110,6 +131,60 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
         } else {
             revert("Invalid command");
         }
+    }
+
+/* @notice Mints liquidity as a concentrated liquidity range order.
+     * @param base The base-side token in the pair.
+     * @param quote The quote-side token in the par.
+     * @param poolIdx The index of the pool type being minted on.
+     * @param bidTick The price tick index of the lower boundary of the range order.
+     * @param askTick The price tick index of the upper boundary of the range order.
+     * @param liq The total amount of liquidity being minted. Represented as sqrt(X*Y)
+     *            for the equivalent constant-product AMM.
+     * @param lpConduit The address of the LP conduit to deposit the minted position at
+     *                  (direct owned liquidity if 0)
+     * @param limitLower Exists to make sure the user is happy with the price the 
+     *                   liquidity is minted at. Transaction fails if the curve price
+     *                   at call time is below this value.
+     * @param limitUpper Transaction fails if the curve price at call time is above this
+     *                   threshold.  */    
+    function mintConcentratedLiq (address base, address quote, uint256 poolIdx,
+                   int24 bidTick, int24 askTick, uint128 liq, address lpConduit, 
+                   uint128 limitLower, uint128 limitHigher) internal returns
+        (int128, int128) {
+        PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
+        _validateConcentratedLiq(base, quote, poolIdx, bidTick, askTick, pool.head_);
+        verifyPermitMint(pool, base, quote, bidTick, askTick, liq);
+
+        return mintOverPool(bidTick, askTick, liq, pool, limitLower, limitHigher,
+                            lpConduit);
+    }
+    
+    /* @notice Burns liquidity as a concentrated liquidity range order.
+     * @param base The base-side token in the pair.
+     * @param quote The quote-side token in the par.
+     * @param poolIdx The index of the pool type being burned on.
+     * @param bidTick The price tick index of the lower boundary of the range order.
+     * @param askTick The price tick index of the upper boundary of the range order.
+     * @param liq The total amount of liquidity being burned. Represented as sqrt(X*Y)
+     *            for the equivalent constant-product AMM.
+     * @param lpConduit The address of the LP conduit to deposit the minted position at
+     *                  (direct owned liquidity if 0)
+     * @param limitLower Exists to make sure the user is happy with the price the 
+     *                   liquidity is burned at. Transaction fails if the curve price
+     *                   at call time is below this value.
+     * @param limitUpper Transaction fails if the curve price at call time is above this
+     *                   threshold. */
+    function burnConcentratedLiq (address base, address quote, uint256 poolIdx,
+                   int24 bidTick, int24 askTick, uint128 liq, address lpConduit, 
+                   uint128 limitLower, uint128 limitHigher)
+        internal returns (int128, int128) {
+        PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
+        _validateConcentratedLiq(base, quote, poolIdx, bidTick, askTick, pool.head_);
+        verifyPermitBurn(pool, base, quote, bidTick, askTick, liq);
+        
+        return burnOverPool(bidTick, askTick, liq, pool, limitLower, limitHigher,
+                            lpConduit);
     }
 
     /* @notice Harvests the rewards for a concentrated liquidity position.
@@ -177,6 +252,19 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
         return Chaining.pinFlow(baseFlow, quoteFlow, qty, inBase);
     }
 
+    function mintConcentratedQty (address base, address quote, uint256 poolIdx,
+                      int24 bidTick, int24 askTick, bool inBase,
+                      uint128 qty, address lpConduit, uint128 limitLower,
+                      uint128 limitHigher) internal
+        returns (int128, int128) {
+        uint128 liq = sizeAddLiq(base, quote, poolIdx, qty, bidTick, askTick, inBase);
+        (int128 baseFlow, int128 quoteFlow) =
+            mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
+                 limitLower, limitHigher);
+        return Chaining.pinFlow(baseFlow, quoteFlow, qty, inBase);
+            
+    }
+
     function sizeAddLiq (address base, address quote, uint256 poolIdx, uint128 qty,
                          int24 bidTick, int24 askTick, bool inBase)
         internal view returns (uint128) {
@@ -215,6 +303,19 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
         return burnAmbientLiq(base, quote, poolIdx, liq, lpConduit,
                     limitLower, limitHigher);
     }
+
+    function burnConcentratedQty (address base, address quote, uint256 poolIdx,
+                      int24 bidTick, int24 askTick, bool inBase,
+                      uint128 qty, address lpConduit,
+                      uint128 limitLower, uint128 limitHigher)
+        internal returns (int128, int128) {
+        bytes32 poolKey = PoolSpecs.encodeKey(base, quote, poolIdx);
+        CurveMath.CurveState memory curve = snapCurve(poolKey);
+        uint128 liq = Chaining.sizeConcLiq(qty, false, curve.priceRoot_,
+                                           bidTick, askTick, inBase);
+        return burnConcentratedLiq(base, quote, poolIdx, bidTick, askTick,
+                    liq, lpConduit, limitLower, limitHigher);
+    }
     
     /* @notice Used at upgrade time to verify that the contract is a valid Croc sidecar proxy and used
      *         in the correct slot. */
@@ -227,5 +328,54 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                code == UserCmd.BURN_AMBIENT_BASE_LP ||
                code == UserCmd.BURN_AMBIENT_QUOTE_LP ||
                code == UserCmd.HARVEST_LP;
+    }
+
+    /// @notice Validate that the pool is stable swap and bid and ask ticks are in correct range for providing concentrated liquidity.
+    /// @dev This is a helper function to validate the concentrated liquidity minting and burning.
+    /// @param base The base token address.
+    /// @param quote The quote token address.
+    /// @param poolIdx The index of the pool type.
+    /// @param bidTick The price tick index of the lower boundary of the range order.
+    /// @param askTick The price tick index of the upper boundary of the range order.
+    /// @param pool The pool specification.
+    function _validateConcentratedLiq (address base, address quote, uint256 poolIdx, int24 bidTick, int24 askTick, PoolSpecs.Pool memory pool) internal view {
+        if (poolIdx == stableSwapPoolIdx_) {
+
+            // get the decimal of the base and quote token.
+            uint8 baseTokenDecimal = _getTokenDecimals(base);
+            uint8 quoteTokenDecimal = _getTokenDecimals(quote);
+
+            // get the price of quote token in terms of base token at the bid and ask tick.
+            uint256 priceRootAtBidTick = bidTick.getSqrtRatioAtTick();
+            uint256 priceRootAtAskTick =  askTick.getSqrtRatioAtTick();
+            
+            if(quoteTokenDecimal > baseTokenDecimal) {
+                // adjust the price if the decimal of quote token is greater than base token.
+                // divided by 2 to get the square root of the price ratio.
+                priceRootAtBidTick = priceRootAtBidTick / 10**((quoteTokenDecimal- baseTokenDecimal)/2);
+                priceRootAtAskTick = priceRootAtAskTick / 10**((quoteTokenDecimal- baseTokenDecimal)/2);
+            }
+            else if(quoteTokenDecimal < baseTokenDecimal) {
+                // adjust the price if the decimal of base token is greater than quote token.
+                // divided by 2 to get the square root of the price ratio.
+                priceRootAtBidTick = priceRootAtBidTick * 10**((baseTokenDecimal - quoteTokenDecimal)/2);
+                priceRootAtAskTick = priceRootAtAskTick * 10**((baseTokenDecimal - quoteTokenDecimal)/2);
+            }
+            require(priceRootAtBidTick >= pool.priceFloor_, "INVALID BID TICK");
+            require(priceRootAtAskTick <= pool.priceCeiling_, "INVALID ASK TICK");
+        }
+        else revert("NOT STABLE SWAP");
+    }
+
+    /// @notice Get the decimal of the token.
+    /// @dev If the token does not have decimal, will return 18 as default.
+    /// @param token The token address.
+    /// @return The decimal of the token.
+    function _getTokenDecimals(address token) internal view returns (uint8) {
+        try ERC20(token).decimals() returns (uint8 tokenDecimals) {
+            return tokenDecimals;
+        } catch {
+            return 18;
+        }
     }
 }

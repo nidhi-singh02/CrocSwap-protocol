@@ -172,15 +172,18 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
      * @param tickSize The pool's grid size in ticks.
      * @param jitThresh The minimum resting time (in seconds) for concentrated LPs.
      * @param knockout The knockout bits for the pool template.
-     @ @param oracleFlags The oracle bit flags if a permissioned pool. */
+     * @param oracleFlags The oracle bit flags if a permissioned pool. 
+     * @param priceFloor The lower limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price).
+     * @param priceCeiling The upper limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price).
+     * @param isStableSwapPool The stable swap pool flag. */
     function setTemplate (bytes calldata input) private {
         (, uint256 poolIdx, uint16 feeRate, uint16 tickSize, uint8 jitThresh,
-         uint8 knockout, uint8 oracleFlags) =
-            abi.decode(input, (uint8, uint256, uint16, uint16, uint8, uint8, uint8));
+         uint8 knockout, uint8 oracleFlags, uint128 priceFloor, uint128 priceCeiling, bool isStableSwapPool) =
+            abi.decode(input, (uint8, uint256, uint16, uint16, uint8, uint8, uint8, uint128, uint128, bool));
         
-        emit CrocEvents.SetPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout,
-                                        oracleFlags);
-        setPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout, oracleFlags);
+        emit CrocEvents.SetPoolTemplate(isStableSwapPool,poolIdx, feeRate, tickSize, jitThresh, knockout,
+                                        oracleFlags, priceFloor, priceCeiling);
+        setPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout, oracleFlags, priceFloor, priceCeiling, isStableSwapPool);
     }
 
     function setTakeRate (bytes calldata input) private {
@@ -223,12 +226,14 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
      * @param tickSize The pool's grid size in ticks.
      * @param jitThresh The minimum resting time (in seconds) for concentrated LPs in
      *                  in the pool.
-     * @param knockout The knockout bit flags for the pool. */
+     * @param knockout The knockout bit flags for the pool. 
+     * @param priceFloor The lower limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price).
+     * @param priceCeiling The upper limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price). */
     function revisePool (bytes calldata cmd) private {
         (, address base, address quote, uint256 poolIdx,
-         uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout) =
-            abi.decode(cmd, (uint8,address,address,uint256,uint16,uint16,uint8,uint8));
-        setPoolSpecs(base, quote, poolIdx, feeRate, tickSize, jitThresh, knockout);
+         uint16 feeRate, uint16 tickSize, uint8 jitThresh, uint8 knockout, uint128 priceFloor, uint128 priceCeiling) =
+            abi.decode(cmd, (uint8,address,address,uint256,uint16,uint16,uint8,uint8, uint128, uint128));
+        setPoolSpecs(base, quote, poolIdx, feeRate, tickSize, jitThresh, knockout, priceFloor, priceCeiling);
     }
 
     /* @notice Set off-grid price improvement.

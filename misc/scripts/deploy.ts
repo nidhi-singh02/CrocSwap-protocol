@@ -218,6 +218,9 @@ async function initPoolTemplate(policy: CrocPolicy) {
     const POOL_IDX3 = 36002;
     const FEE_BPS3 = 100;
 
+    const POOL_IDX4 = 36003;
+    const FEE_BPS4 = 10;
+
     const POOL_INIT_LIQ = 10000;
 
     const TICK_SIZE = 16;
@@ -226,6 +229,10 @@ async function initPoolTemplate(policy: CrocPolicy) {
     const KNOCKOUT_ON_FLAG = 32;
     const KNOCKOUT_TICKS_FLAG = 4; // 16 ticks
     const knockoutFlag = KNOCKOUT_ON_FLAG + KNOCKOUT_TICKS_FLAG;
+
+    // TODO set the price root for the stable swap pool
+    const STABLE_SWAP_PRICE_ROOT_FLOOR = 0;
+    const STABLE_SWAP_PRICE_ROOT_CEILING = 0;
 
     if (addrs.dex) {
         console.log("Installing Treasury Resolution...");
@@ -238,20 +245,27 @@ async function initPoolTemplate(policy: CrocPolicy) {
 
         console.log("Installing Ops Resolution...");
         let templateCmd = abi.encode(
-            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8"],
-            [110, POOL_IDX1, FEE_BPS1 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0],
+            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "uint128", "uint128", "bool"],
+            [110, POOL_IDX1, FEE_BPS1 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, 0, 0, false],
         );
         tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
 
         templateCmd = abi.encode(
-            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8"],
-            [110, POOL_IDX2, FEE_BPS2 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0],
+            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "uint128", "uint128", "bool"],
+            [110, POOL_IDX2, FEE_BPS2 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, 0, 0, false],
         );
         tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
 
         templateCmd = abi.encode(
-            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8"],
-            [110, POOL_IDX3, FEE_BPS3 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0],
+            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "uint128", "uint128", "bool"],
+            [110, POOL_IDX3, FEE_BPS3 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, 0, 0, false],
+        );
+        tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
+
+        // sets the template for the stable swap pool
+        templateCmd = abi.encode(
+            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "uint128", "uint128", "bool"],
+            [110, POOL_IDX4, FEE_BPS4 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, STABLE_SWAP_PRICE_ROOT_FLOOR, STABLE_SWAP_PRICE_ROOT_CEILING, true],
         );
         tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
 

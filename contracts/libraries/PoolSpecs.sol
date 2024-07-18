@@ -51,7 +51,15 @@ library PoolSpecs {
      * @param oracleFlags_ Bitmap flags to indicate the pool's oracle permission 
      *                     requirements. Current implementation only uses the least 
      *                     significant bit, which if on checks oracle permission on every
-     *                     pool related call. Otherwise pool is permissionless. */
+     *                     pool related call. Otherwise pool is permissionless. 
+     * 
+     * @param priceFloor The lower limit of price at which mint/burn of concentrated liq 
+     *                   is allowed for stable swap pool (defined as square root of actual price).
+     * @param priceCeiling The upper limit of price at which mint/burn of concentrated liq 
+     *                     is allowed for stable swap pool (defined as square root of actual price).
+     * @dev The values of priceFloor and priceCeiling are standardized to the same decimal token pairs.
+     *                   These price values are represented as quote token in terms of base token (ratio of quote token to base token). 
+     *                   These values will be adjusted for different token decimal pairs, such as DAI/USDT. */
     struct Pool {
         uint8 schema_;
         uint16 feeRate_;
@@ -60,6 +68,8 @@ library PoolSpecs {
         uint8 jitThresh_;
         uint8 knockoutBits_;
         uint8 oracleFlags_;
+        uint128 priceFloor_;
+        uint128 priceCeiling_;
     }
 
     uint8 constant BASE_SCHEMA = 1;
