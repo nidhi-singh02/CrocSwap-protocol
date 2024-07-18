@@ -230,9 +230,9 @@ async function initPoolTemplate(policy: CrocPolicy) {
     const KNOCKOUT_TICKS_FLAG = 4; // 16 ticks
     const knockoutFlag = KNOCKOUT_ON_FLAG + KNOCKOUT_TICKS_FLAG;
 
-    // TODO - set the tick for the stable swap pool
-    const STABLE_SWAP_BID_TICK = 0;
-    const STABLE_SWAP_ASK_TICK = 0;
+    // TODO - set the price root for the stable swap pool
+    const STABLE_SWAP_PRICE_ROOT_FLOOR = 0;
+    const STABLE_SWAP_PRICE_ROOT_CEILING = 0;
 
     if (addrs.dex) {
         console.log("Installing Treasury Resolution...");
@@ -265,7 +265,7 @@ async function initPoolTemplate(policy: CrocPolicy) {
         // sets the template for the stable swap pool
         templateCmd = abi.encode(
             ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "int24", "int24", "bool"],
-            [110, POOL_IDX4, FEE_BPS4 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, STABLE_SWAP_BID_TICK, STABLE_SWAP_ASK_TICK, true],
+            [110, POOL_IDX4, FEE_BPS4 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, STABLE_SWAP_PRICE_ROOT_FLOOR, STABLE_SWAP_PRICE_ROOT_CEILING, true],
         );
         tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
 

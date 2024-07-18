@@ -120,17 +120,17 @@ contract PoolRegistry is StorageLayout {
      *                  rest before it can be burned.
      * @param knockout  The knockout liquidity bit flags for the pool. (See KnockoutLiq library)
      * @param oracleFlags The permissioned oracle flags for the pool.
-     * @param bidTick The tick index of the stable swap pool's bid price.
-     * @param askTick The tick index of the stable swap pool's ask price. 
+     * @param priceFloor The lower limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price).
+     * @param priceCeiling The upper limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price).
      * @param isStableSwapPool The stable swap pool flag. */
     function setPoolTemplate (uint256 poolIdx, uint16 feeRate, uint16 tickSize,
-                              uint8 jitThresh, uint8 knockout, uint8 oracleFlags, int24 bidTick, int24 askTick, bool isStableSwapPool)
+                              uint8 jitThresh, uint8 knockout, uint8 oracleFlags, uint128 priceFloor, uint128 priceCeiling, bool isStableSwapPool)
         internal {
         PoolSpecs.Pool storage templ = templates_[poolIdx];
         if(isStableSwapPool) {
             stableSwapPoolIdx_ = poolIdx;
-            templ.bidTick_ = bidTick;
-            templ.askTick_ = askTick;
+            templ.priceFloor_ = priceFloor;
+            templ.priceCeiling_ = priceCeiling;
         }
         templ.schema_ = PoolSpecs.BASE_SCHEMA;
         templ.feeRate_ = feeRate;
@@ -168,16 +168,16 @@ contract PoolRegistry is StorageLayout {
      * @param jitThresh The minimum time (in seconds) a concentrated LP position must 
      *                  rest before it can be burned.
      * @param knockoutBits The knockout liquiidity parameter bit flags for the pool. 
-     * @param bidTick The tick index of the stable swap pool's bid price.
-     * @param askTick The tick index of the stable swap pool's ask price. */
+     * @param priceFloor The lower limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price).
+     * @param priceCeiling The upper limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price). */
     function setPoolSpecs (address base, address quote, uint256 poolIdx,
                            uint16 feeRate, uint16 tickSize, uint8 jitThresh,
-                           uint8 knockoutBits, int24 bidTick, int24 askTick) internal {
+                           uint8 knockoutBits, uint128 priceFloor, uint128 priceCeiling) internal {
         PoolSpecs.Pool storage pool = selectPool(base, quote, poolIdx);
         // No need to check for 0 poolIdx as selectPool() will revert if the pool doesn't exist.
         if(poolIdx == stableSwapPoolIdx_) {
-            pool.bidTick_ = bidTick;
-            pool.askTick_ = askTick;
+            pool.priceFloor_ = priceFloor;
+            pool.priceCeiling_ = priceCeiling;
         }
         pool.feeRate_ = feeRate;
         pool.tickSize_ = tickSize;

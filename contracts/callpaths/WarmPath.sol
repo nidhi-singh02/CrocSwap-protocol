@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.19;
 
+import '../libraries/BaseERC20.sol';
 import '../libraries/Directives.sol';
 import '../libraries/Encoding.sol';
 import '../libraries/TokenFlow.sol';
@@ -33,6 +34,7 @@ import '../CrocEvents.sol';
  *         within the primary CrocSwap contract. */
 contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
 
+    using TickMath for int24;
     using SafeCast for uint128;
     using TokenFlow for TokenFlow.PairSeq;
     using CurveMath for CurveMath.CurveState;
@@ -106,7 +108,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
         } else if (code == UserCmd.BURN_RANGE_QUOTE_LP) {
             return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
                            limitLower, limitHigher);
-        }else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
+        } else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
             return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
         } else if (code == UserCmd.MINT_AMBIENT_BASE_LP) {
             return mintAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
@@ -151,7 +153,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                    uint128 limitLower, uint128 limitHigher) internal returns
         (int128, int128) {
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
-        _validateConcentratedLiq(poolIdx,bidTick, askTick, pool.head_);
+        _validateConcentratedLiq(base, quote, poolIdx, bidTick, askTick, pool.head_);
         verifyPermitMint(pool, base, quote, bidTick, askTick, liq);
 
         return mintOverPool(bidTick, askTick, liq, pool, limitLower, limitHigher,
@@ -178,7 +180,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                    uint128 limitLower, uint128 limitHigher)
         internal returns (int128, int128) {
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
-        _validateConcentratedLiq(poolIdx, bidTick, askTick, pool.head_);
+        _validateConcentratedLiq(base, quote, poolIdx, bidTick, askTick, pool.head_);
         verifyPermitBurn(pool, base, quote, bidTick, askTick, liq);
         
         return burnOverPool(bidTick, askTick, liq, pool, limitLower, limitHigher,
@@ -328,15 +330,39 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                code == UserCmd.HARVEST_LP;
     }
 
-    /// @notice Validate that the pool is stable swap and bid ticks are in correct range for providing concentrated liquidity.
+    /// @notice Validate that the pool is stable swap and bid and ask ticks are in correct range for providing concentrated liquidity.
     /// @dev This is a helper function to validate the concentrated liquidity minting and burning.
+    /// @param base The base token address.
+    /// @param quote The quote token address.
     /// @param poolIdx The index of the pool type.
     /// @param bidTick The price tick index of the lower boundary of the range order.
     /// @param askTick The price tick index of the upper boundary of the range order.
-    function _validateConcentratedLiq (uint256 poolIdx, int24 bidTick, int24 askTick, PoolSpecs.Pool memory pool) internal view {
+    /// @param pool The pool specification.
+    function _validateConcentratedLiq (address base, address quote, uint256 poolIdx, int24 bidTick, int24 askTick, PoolSpecs.Pool memory pool) internal view {
         if (poolIdx == stableSwapPoolIdx_) {
-            require(bidTick >= pool.bidTick_, "INVALID BID TICK");
-            require(askTick <= pool.askTick_, "INVALID ASK TICK");
+
+            // get the decimal of base and quote token.
+            uint8 baseTokenDecimal = ERC20(base).decimals();
+            uint8 quoteTokenDecimal = ERC20(quote).decimals();
+
+            // get the price of quote token in terms of base token at the bid and ask tick.
+            uint256 priceRootAtBidTick = bidTick.getSqrtRatioAtTick();
+            uint256 priceRootAtAskTick =  askTick.getSqrtRatioAtTick();
+            
+            if(quoteTokenDecimal > baseTokenDecimal) {
+                // adjust the price if the decimal of quote token is greater than base token.
+                // divided by 2 to get the square root of the price ratio.
+                priceRootAtBidTick = priceRootAtBidTick / 10**((quoteTokenDecimal- baseTokenDecimal)/2);
+                priceRootAtAskTick = priceRootAtAskTick / 10**((quoteTokenDecimal- baseTokenDecimal)/2);
+            }
+            else if(quoteTokenDecimal < baseTokenDecimal) {
+                // adjust the price if the decimal of base token is greater than quote token.
+                // divided by 2 to get the square root of the price ratio.
+                priceRootAtBidTick = priceRootAtBidTick * 10**((baseTokenDecimal - quoteTokenDecimal)/2);
+                priceRootAtAskTick = priceRootAtAskTick * 10**((baseTokenDecimal - quoteTokenDecimal)/2);
+            }
+            require(priceRootAtBidTick >= pool.priceFloor_, "INVALID BID TICK");
+            require(priceRootAtAskTick <= pool.priceCeiling_, "INVALID ASK TICK");
         }
         else revert("NOT STABLE SWAP");
     }
