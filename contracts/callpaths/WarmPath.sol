@@ -361,8 +361,8 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                 priceRootAtBidTick = priceRootAtBidTick * 10**((baseTokenDecimal - quoteTokenDecimal)/2);
                 priceRootAtAskTick = priceRootAtAskTick * 10**((baseTokenDecimal - quoteTokenDecimal)/2);
             }
-            require(priceRootAtBidTick >= pool.priceFloor_, "INVALID BID TICK");
-            require(priceRootAtAskTick <= pool.priceCeiling_, "INVALID ASK TICK");
+            require(priceRootAtBidTick == pool.priceFloor_, "INVALID BID TICK");
+            require(priceRootAtAskTick == pool.priceCeiling_, "INVALID ASK TICK");
         }
         else revert("NOT STABLE SWAP");
     }
