@@ -342,8 +342,8 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
         if (poolIdx == stableSwapPoolIdx_) {
 
             // get the decimal of the base and quote token.
-            uint8 baseTokenDecimal = getTokenDecimals(base);
-            uint8 quoteTokenDecimal = getTokenDecimals(quote);
+            uint8 baseTokenDecimal = _getTokenDecimals(base);
+            uint8 quoteTokenDecimal = _getTokenDecimals(quote);
 
             // get the price of quote token in terms of base token at the bid and ask tick.
             uint256 priceRootAtBidTick = bidTick.getSqrtRatioAtTick();
@@ -371,7 +371,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
     /// @dev If the token does not have decimal, will return 18 as default.
     /// @param token The token address.
     /// @return The decimal of the token.
-    function getTokenDecimals(address token) public view returns (uint8) {
+    function _getTokenDecimals(address token) internal view returns (uint8) {
         try ERC20(token).decimals() returns (uint8 tokenDecimals) {
             return tokenDecimals;
         } catch {
