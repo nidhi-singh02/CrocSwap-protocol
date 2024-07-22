@@ -191,7 +191,7 @@ constructor(address initialWbera) CrocSwapDex(initialWbera) {
         proxyPaths_[CrocSlots.MICRO_PROXY_IDX] = address(new MicroPaths());
         proxyPaths_[CrocSlots.FLAG_CROSS_PROXY_IDX] = address(new KnockoutFlagPath());
         proxyPaths_[CrocSlots.KNOCKOUT_LP_PROXY_IDX] = address(new KnockoutLiqPath(initialWbera));
-        proxyPaths_[CrocSlots.SAFE_MODE_PROXY_PATH] = address(new SafeModePath(initialWbera));
+        proxyPaths_[CrocSlots.SAFE_MODE_PROXY_PATH] = address(new SafeModePath());
     }
 }
 
