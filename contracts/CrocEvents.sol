@@ -26,7 +26,6 @@ library CrocEvents {
     event DisablePoolTemplate (uint256 indexed poolIdx);
 
     /* @notice Emitted when a new template is written or overwritten.
-     * @param isStableSwapPool Indicates if the pool is a stable swap pool.
      * @param poolIdx The pool type index being disabled.
      * @param feeRate The swap fee rate for the pool (represented in units of 0.0001%)
      * @param tickSize The minimum tick size for range orders in the pool.
@@ -35,7 +34,7 @@ library CrocEvents {
      * @param oracleFlags The permissioned pool oracle flags if this is setup as a permissioned pool. 
      * @param priceFloor The lower limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price).
      * @param priceCeiling The upper limit of price at which mint/burn of concentrated liq is allowed for stable swap pool (defined as square root of actual price). */
-    event SetPoolTemplate (bool indexed isStableSwapPool, uint256 indexed poolIdx, uint16 feeRate, uint16 tickSize,
+    event SetPoolTemplate (uint256 indexed poolIdx, uint16 feeRate, uint16 tickSize,
                            uint8 jitThresh, uint8 knockout, uint8 oracleFlags, uint128 priceFloor, uint128 priceCeiling);
 
     /* @notice Emitted when a previously created pool with a pre-existing protocol take rate is re-

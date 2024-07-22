@@ -182,7 +182,7 @@ contract ColdPath is MarketSequencer, DepositDesk, ProtocolAccount {
          uint8 knockout, uint8 oracleFlags, uint128 priceFloor, uint128 priceCeiling, bool isStableSwapPool) =
             abi.decode(input, (uint8, uint256, uint16, uint16, uint8, uint8, uint8, uint128, uint128, bool));
         
-        emit CrocEvents.SetPoolTemplate(isStableSwapPool,poolIdx, feeRate, tickSize, jitThresh, knockout,
+        emit CrocEvents.SetPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout,
                                         oracleFlags, priceFloor, priceCeiling);
         setPoolTemplate(poolIdx, feeRate, tickSize, jitThresh, knockout, oracleFlags, priceFloor, priceCeiling, isStableSwapPool);
     }
