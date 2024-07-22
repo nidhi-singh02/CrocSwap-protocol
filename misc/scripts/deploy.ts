@@ -13,6 +13,7 @@ import {
     KnockoutFlagPath,
     KnockoutLiqPath,
     MultiPath,
+    SafeModePath,
     WBERA
 } from "../../typechain";
 
@@ -31,6 +32,7 @@ interface CrocAddrs {
     impact: string | undefined;
     shell: string | undefined;
     multiswap: string | undefined;
+    safeMode: string | undefined;
     wbera: string | undefined;
 }
 
@@ -49,6 +51,7 @@ const addrs: CrocAddrs = {
     impact: undefined,
     shell: undefined,
     multiswap: undefined,
+    safeMode: undefined,
     wbera: "0x7507c1dc16935B82698e4C63f2746A2fCf994dF8",
 };
 
@@ -88,6 +91,10 @@ async function createDexContracts(): Promise<CrocSwapDex> {
     factory = await ethers.getContractFactory("MultiPath");
     const multiPath = addrs.multi ? factory.attach(addrs.multi) : ((await factory.deploy(override)) as MultiPath);
     addrs.multi = multiPath.address;
+
+    factory = await ethers.getContractFactory("SafeModePath");
+    const safeModePath = addrs.safeMode ? factory.attach(addrs.safeMode) : ((await factory.deploy(override)) as SafeModePath);
+    addrs.safeMode = safeModePath.address;
 
     factory = await ethers.getContractFactory("ColdPath");
     const coldPath = addrs.cold ? factory.attach(addrs.cold) : ((await factory.deploy(addrs.wbera, override)) as ColdPath);
@@ -148,7 +155,7 @@ async function createPeripheryContracts(dexAddr: string): Promise<CrocPolicy> {
 async function installPolicy(dex: CrocSwapDex) {
     console.log("Installing Policy...");
     const authCmd = abi.encode(["uint8", "address"], [20, addrs.policy]);
-    const tx = await dex.protocolCmd(COLD_PROXY_IDX, authCmd, true, override);
+    const tx = await dex.protocolCmd(SAFE_MODE_PROXY_PATH, authCmd, true, override);
     await tx.wait();
     console.log("Policy installed.");
 }
@@ -193,6 +200,12 @@ async function installSidecars(dex: CrocSwapDex) {
     tx = await dex.protocolCmd(BOOT_PROXY_IDX, cmd, true);
     await tx.wait();
     console.log("Multicall Path installed.");
+
+    cmd = abi.encode(["uint8", "address", "uint16"], [21, addrs.safeMode, SAFE_MODE_PROXY_PATH]);
+    console.log("Installing Safe Mode Path...");
+    tx = await dex.protocolCmd(BOOT_PROXY_IDX, cmd, true);
+    await tx.wait();
+    console.log("Safe Mode Path installed.");
 
     cmd = abi.encode(["uint8", "address", "uint16"], [21, addrs.knockout, KNOCKOUT_LP_PROXY_IDX]);
     console.log("Installing Knockout LP Path...");
