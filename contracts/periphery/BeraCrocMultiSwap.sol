@@ -119,7 +119,7 @@ contract BeraCrocMultiSwap {
             payable(msg.sender).transfer(uint256(quantity));
         }
 
-        _refund();
+        _refundEther();
         return quantity;
     }
 
@@ -160,18 +160,9 @@ contract BeraCrocMultiSwap {
     }
 
     /* @notice Refund any remaining Ether in the contract to the sender. */
-    function _refund() internal {
+    function _refundEther() internal {
         if (address(this).balance > 0) {
             payable(msg.sender).transfer(address(this).balance);
         }
-    }
-
-    /* @notice // Prevent direct transfers to the contract by reverting any Ether sent directly. */
-    receive() external payable {
-        revert("Direct transfers not allowed");
-    }
-
-    fallback() external payable {
-        revert("Direct transfers not allowed");
     }
 }
