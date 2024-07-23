@@ -24,8 +24,6 @@ contract BeraCrocMultiSwap {
         _deployer = msg.sender;
     }
 
-    receive() external payable {}
-
     /* @notice Preview a series of swaps between multiple pools.
      *
      * @dev A convenience method for previewing a series of swaps in sequence. This is
@@ -121,6 +119,7 @@ contract BeraCrocMultiSwap {
             payable(msg.sender).transfer(uint256(quantity));
         }
 
+        _refund();
         return quantity;
     }
 
@@ -160,11 +159,19 @@ contract BeraCrocMultiSwap {
         return (uint128(-baseFlow), _step.base);
     }
 
-    function retire() external {
-        require(msg.sender == _deployer, "Only deployer can retire");
-        // drain the honey and stgusdc
-        IERC20Minimal(0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B).transfer(_deployer, IERC20Minimal(0x7EeCA4205fF31f947EdBd49195a7A88E6A91161B).balanceOf(address(this)));
-        IERC20Minimal(0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5).transfer(_deployer, IERC20Minimal(0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5).balanceOf(address(this)));
-        selfdestruct(payable(_deployer));
+    /* @notice Refund any remaining Ether in the contract to the sender. */
+    function _refund() internal {
+        if (address(this).balance > 0) {
+            payable(msg.sender).transfer(address(this).balance);
+        }
+    }
+
+    /* @notice // Prevent direct transfers to the contract by reverting any Ether sent directly. */
+    receive() external payable {
+        revert("Direct transfers not allowed");
+    }
+
+    fallback() external payable {
+        revert("Direct transfers not allowed");
     }
 }
