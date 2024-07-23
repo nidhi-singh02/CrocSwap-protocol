@@ -162,7 +162,16 @@ contract BeraCrocMultiSwap {
     /* @notice Refund any remaining Ether in the contract to the sender. */
     function _refundEther() internal {
         if (address(this).balance > 0) {
-            payable(msg.sender).transfer(address(this).balance);
+            _safeTransferETH(msg.sender, address(this).balance);
         }
+    }
+
+    /* @notice Transfers ETH to the recipient.
+     * @param to The recipient of the ETH.
+     * @param value The amount of ETH to transfer. 
+    */
+    function _safeTransferETH(address to, uint256 value) internal {
+        (bool success, ) = to.call{value: value}(new bytes(0));
+        require(success, 'STE');
     }
 }
