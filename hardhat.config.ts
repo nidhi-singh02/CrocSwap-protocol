@@ -36,7 +36,21 @@ module.exports = {
     ],
     overrides: {},
   },
-
+  etherscan: {
+    apiKey: {
+      bartio: "bartio_testnet", // apiKey is not required, just set a placeholder
+    },
+    customChains: [
+      {
+        network: "bartio",
+        chainId: 80084,
+        urls: {
+          apiURL: "https://api.routescan.io/v2/network/testnet/evm/80084/etherscan",
+          browserURL: "https://bartio.beratrail.io"
+        }
+      }
+    ]
+  },
   networks: {
     local: {
       url: "http://127.0.0.1:8545",
