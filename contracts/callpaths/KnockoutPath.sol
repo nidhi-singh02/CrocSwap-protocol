@@ -82,6 +82,18 @@ contract KnockoutLiqPath is TradeMatcher, SettleLayer {
         // Ensure reserve flags are valid
         require(reserveFlags < 0x4, "RF");
 
+        if (base == address(0)) {
+            require(!isKnockoutCmd(code), "WB");
+            base = wbera;
+            reserveFlags = 0x4;
+        }
+
+        if (quote == address(0)) {
+            require(!isKnockoutCmd(code), "WB");
+            quote = wbera;
+            reserveFlags = 0x5;
+        }
+
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
         CurveMath.CurveState memory curve = snapCurve(pool.hash_);
 
@@ -210,4 +222,10 @@ contract KnockoutLiqPath is TradeMatcher, SettleLayer {
         return slot == CrocSlots.KNOCKOUT_LP_PROXY_IDX;
     }
 
+    function isKnockoutCmd (uint8 code) internal pure returns (bool) {
+        return code == UserCmd.MINT_KNOCKOUT ||
+               code == UserCmd.BURN_KNOCKOUT ||
+               code == UserCmd.CLAIM_KNOCKOUT ||
+               code == UserCmd.RECOVER_KNOCKOUT;
+    }
 }
