@@ -89,6 +89,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                        uint128 limitLower, uint128 limitHigher,
                        address lpConduit)
         private returns (int128, int128) {
+        // Override the bid and ask ticks for stable swap pools
         if (poolIdx == stableSwapPoolIdx_) {
             PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
             (bidTick, askTick) = _calculateBidAskTick(base, quote, pool.head_);
@@ -364,10 +365,10 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
         askTick = TickMath.getTickAtSqrtRatio(priceRootAtAskTick);
     }
 
-    /// @notice Get the decimal of the token.
-    /// @dev If the token does not have decimal, will return 18 as default.
-    /// @param token The token address.
-    /// @return The decimal of the token.
+    /* @notice Get the decimal of the token.
+     * @dev If the token does not have decimal, will return 18 as default.
+     * @param token The token address.
+     * @return The decimal of the token. */
     function _getTokenDecimals(address token) internal view returns (uint8) {
         try ERC20(token).decimals() returns (uint8 tokenDecimals) {
             return tokenDecimals;
