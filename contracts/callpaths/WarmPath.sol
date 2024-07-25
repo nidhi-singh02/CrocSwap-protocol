@@ -94,7 +94,6 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
             (bidTick, askTick) = _calculateBidAskTick(base, quote, pool.head_);
         }
-        // revert("NOT STABLE SWAP");
         if (code == UserCmd.MINT_RANGE_LIQ_LP) {
             return mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
                         limitLower, limitHigher);
@@ -153,7 +152,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
      *                   at call time is below this value.
      * @param limitUpper Transaction fails if the curve price at call time is above this
      *                   threshold.  */    
-        function mintConcentratedLiq (address base, address quote, uint256 poolIdx,
+    function mintConcentratedLiq (address base, address quote, uint256 poolIdx,
                    int24 bidTick, int24 askTick, uint128 liq, address lpConduit, 
                    uint128 limitLower, uint128 limitHigher) internal returns
         (int128, int128) {
