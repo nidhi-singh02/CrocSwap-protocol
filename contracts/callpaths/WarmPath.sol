@@ -7,7 +7,6 @@ import '../libraries/Directives.sol';
 import '../libraries/Encoding.sol';
 import '../libraries/PriceGrid.sol';
 import '../libraries/ProtocolCmd.sol';
-import '../libraries/TickMath.sol';
 import '../libraries/TokenFlow.sol';
 import '../mixins/MarketSequencer.sol';
 import '../mixins/SettleLayer.sol';
@@ -15,7 +14,6 @@ import '../mixins/PoolRegistry.sol';
 import '../mixins/MarketSequencer.sol';
 import '../mixins/ProtocolAccount.sol';
 import '../CrocEvents.sol';
-
 
 /* @title Warm path callpath sidecar.
  * @notice Defines a proxy sidecar contract that's used to move code outside the 
@@ -104,10 +102,10 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             return burnConcentratedLiq(base, quote, poolIdx, liq, lpConduit,
                         limitLower, limitHigher);
         } else if (code == UserCmd.BURN_RANGE_BASE_LP) {
-            return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
+            return burnConcentratedQty(base, quote, poolIdx, true, liq, lpConduit,
                            limitLower, limitHigher);
         } else if (code == UserCmd.BURN_RANGE_QUOTE_LP) {
-            return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
+            return burnConcentratedQty(base, quote, poolIdx, false, liq, lpConduit,
                            limitLower, limitHigher);
         } else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
             return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
@@ -300,12 +298,13 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
     }
 
     function burnConcentratedQty (address base, address quote, uint256 poolIdx,
-                      int24 bidTick, int24 askTick, bool inBase,
-                      uint128 qty, address lpConduit,
+                      bool inBase,uint128 qty, address lpConduit,
                       uint128 limitLower, uint128 limitHigher)
         internal returns (int128, int128) {
+        PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
         bytes32 poolKey = PoolSpecs.encodeKey(base, quote, poolIdx);
         CurveMath.CurveState memory curve = snapCurve(poolKey);
+        (int24 bidTick, int24 askTick) = _calculateBidAskTick(base, quote, poolIdx, pool.head_);
         uint128 liq = Chaining.sizeConcLiq(qty, false, curve.priceRoot_,
                                            bidTick, askTick, inBase);
         return burnConcentratedLiq(base, quote, poolIdx,
@@ -322,7 +321,10 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
         return code == UserCmd.BURN_AMBIENT_LIQ_LP ||
                code == UserCmd.BURN_AMBIENT_BASE_LP ||
                code == UserCmd.BURN_AMBIENT_QUOTE_LP ||
-               code == UserCmd.HARVEST_LP;
+               code == UserCmd.HARVEST_LP ||
+               code == UserCmd.BURN_RANGE_BASE_LP ||
+               code == UserCmd.BURN_RANGE_QUOTE_LP ||
+               code == UserCmd.BURN_RANGE_LIQ_LP;
     }
 
     /// @notice Validate that the pool is stable swap and bid and ask ticks are in correct range for providing concentrated liquidity.
@@ -339,17 +341,16 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             uint8 baseTokenDecimal = _getTokenDecimals(base);
             uint8 quoteTokenDecimal = _getTokenDecimals(quote);
 
-
             uint128 priceRootAtBidTick;
             uint128 priceRootAtAskTick;
             
             if(quoteTokenDecimal > baseTokenDecimal) {
-                priceRootAtBidTick = uint128(pool.priceFloor_ * 10**(2/(quoteTokenDecimal - baseTokenDecimal)));
-                priceRootAtAskTick = uint128(pool.priceCeiling_ * 10**(2/(quoteTokenDecimal - baseTokenDecimal)));
+                priceRootAtBidTick = uint128(pool.priceFloor_ * 10**((quoteTokenDecimal - baseTokenDecimal)/2));
+                priceRootAtAskTick = uint128(pool.priceCeiling_ * 10**((quoteTokenDecimal - baseTokenDecimal)/2));
             }
             else if(quoteTokenDecimal < baseTokenDecimal) {
-                priceRootAtBidTick = uint128(pool.priceFloor_ * 10**(2/(baseTokenDecimal - quoteTokenDecimal)));
-                priceRootAtAskTick = uint128(pool.priceCeiling_ * 10**(2/(baseTokenDecimal - quoteTokenDecimal)));
+                priceRootAtBidTick = uint128(pool.priceFloor_ * 10**((baseTokenDecimal - quoteTokenDecimal)/2));
+                priceRootAtAskTick = uint128(pool.priceCeiling_ * 10**((baseTokenDecimal - quoteTokenDecimal)/2));
             }
 
             require(priceRootAtBidTick == pool.priceFloor_, "INVALID BID TICK");
