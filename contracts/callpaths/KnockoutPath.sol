@@ -82,6 +82,16 @@ contract KnockoutLiqPath is TradeMatcher, SettleLayer {
         // Ensure reserve flags are valid
         require(reserveFlags < 0x4, "RF");
 
+        if (base == address(0)) {
+            base = wbera;
+            reserveFlags = 0x4;
+        }
+
+        if (quote == address(0)) {
+            quote = wbera;
+            reserveFlags = 0x5;
+        }
+
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
         CurveMath.CurveState memory curve = snapCurve(pool.hash_);
 
@@ -209,5 +219,4 @@ contract KnockoutLiqPath is TradeMatcher, SettleLayer {
     function acceptCrocProxyRole (address, uint16 slot) public pure returns (bool) {
         return slot == CrocSlots.KNOCKOUT_LP_PROXY_IDX;
     }
-
 }
