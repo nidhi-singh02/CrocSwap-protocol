@@ -232,7 +232,7 @@ async function initPoolTemplate(policy: CrocPolicy) {
     const FEE_BPS3 = 100;
 
     const POOL_IDX4 = 36003;
-    const FEE_BPS4 = 10;
+    const FEE_BPS4 = 1;
 
     const POOL_INIT_LIQ = 10000;
 
@@ -244,8 +244,8 @@ async function initPoolTemplate(policy: CrocPolicy) {
     const knockoutFlag = KNOCKOUT_ON_FLAG + KNOCKOUT_TICKS_FLAG;
 
     // TODO set the price root for the stable swap pool
-    const STABLE_SWAP_PRICE_ROOT_FLOOR = BigInt(17540112516508082354); // 0.90412, tick = (-1008) (USDC/USDT)
-    const STABLE_SWAP_PRICE_ROOT_CEILING = BigInt(18504940018287354211); // 1.10605, tick = 63 (USDC/USDT)
+    const STABLE_SWAP_PRICE_ROOT_FLOOR = BigInt(18428307471288117482);
+    const STABLE_SWAP_PRICE_ROOT_CEILING = BigInt(18465199121032091054);
 
     if (addrs.dex) {
         console.log("Installing Treasury Resolution...");

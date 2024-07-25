@@ -234,6 +234,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
     function mintAmbientLiq (address base, address quote, uint256 poolIdx, uint128 liq,
                    address lpConduit, uint128 limitLower, uint128 limitHigher) internal
         returns (int128, int128) {
+        require(poolIdx != stableSwapPoolIdx_, "STABLE SWAP");
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
         verifyPermitMint(pool, base, quote, 0, 0, liq);
         return mintOverPool(liq, pool, limitLower, limitHigher, lpConduit);
