@@ -225,11 +225,6 @@ async function initPoolTemplate(policy: CrocPolicy) {
     const POOL_IDX1 = 36000;
     const FEE_BPS1 = 5;
 
-    const POOL_IDX2 = 36001;
-    const FEE_BPS2 = 30;
-
-    const POOL_IDX3 = 36002;
-    const FEE_BPS3 = 100;
 
     const POOL_IDX4 = 36003;
     const FEE_BPS4 = 1;
@@ -260,18 +255,6 @@ async function initPoolTemplate(policy: CrocPolicy) {
         let templateCmd = abi.encode(
             ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "uint128", "uint128", "bool"],
             [110, POOL_IDX1, FEE_BPS1 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, 0, 0, false],
-        );
-        tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
-
-        templateCmd = abi.encode(
-            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "uint128", "uint128", "bool"],
-            [110, POOL_IDX2, FEE_BPS2 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, 0, 0, false],
-        );
-        tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
-
-        templateCmd = abi.encode(
-            ["uint8", "uint256", "uint16", "uint16", "uint8", "uint8", "uint8", "uint128", "uint128", "bool"],
-            [110, POOL_IDX3, FEE_BPS3 * 100, TICK_SIZE, JIT_THRESH, knockoutFlag, 0, 0, 0, false],
         );
         tx = await policy.opsResolution(addrs.dex, COLD_PROXY_IDX, templateCmd, override);
 
