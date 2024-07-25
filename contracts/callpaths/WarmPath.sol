@@ -184,6 +184,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                    int24 bidTick, int24 askTick, uint128 liq, address lpConduit, 
                    uint128 limitLower, uint128 limitHigher)
         internal returns (int128, int128) {
+        require(poolIdx == stableSwapPoolIdx_, "NOT STABLE SWAP");
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
         verifyPermitBurn(pool, base, quote, bidTick, askTick, liq);
         
@@ -260,6 +261,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                       uint128 qty, address lpConduit, uint128 limitLower,
                       uint128 limitHigher) internal
         returns (int128, int128) {
+        require(poolIdx == stableSwapPoolIdx_, "NOT STABLE SWAP");
         uint128 liq = sizeAddLiq(base, quote, poolIdx, qty, bidTick, askTick, inBase);
         (int128 baseFlow, int128 quoteFlow) =
             mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
@@ -312,6 +314,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                       uint128 qty, address lpConduit,
                       uint128 limitLower, uint128 limitHigher)
         internal returns (int128, int128) {
+        require(poolIdx == stableSwapPoolIdx_, "NOT STABLE SWAP");
         bytes32 poolKey = PoolSpecs.encodeKey(base, quote, poolIdx);
         CurveMath.CurveState memory curve = snapCurve(poolKey);
         uint128 liq = Chaining.sizeConcLiq(qty, false, curve.priceRoot_,
