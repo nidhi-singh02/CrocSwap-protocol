@@ -83,13 +83,11 @@ contract KnockoutLiqPath is TradeMatcher, SettleLayer {
         require(reserveFlags < 0x4, "RF");
 
         if (base == address(0)) {
-            require(!isKnockoutCmd(code), "WB");
             base = wbera;
             reserveFlags = 0x4;
         }
 
         if (quote == address(0)) {
-            require(!isKnockoutCmd(code), "WB");
             quote = wbera;
             reserveFlags = 0x5;
         }
@@ -220,12 +218,5 @@ contract KnockoutLiqPath is TradeMatcher, SettleLayer {
      *         in the correct slot. */
     function acceptCrocProxyRole (address, uint16 slot) public pure returns (bool) {
         return slot == CrocSlots.KNOCKOUT_LP_PROXY_IDX;
-    }
-
-    function isKnockoutCmd (uint8 code) internal pure returns (bool) {
-        return code == UserCmd.MINT_KNOCKOUT ||
-               code == UserCmd.BURN_KNOCKOUT ||
-               code == UserCmd.CLAIM_KNOCKOUT ||
-               code == UserCmd.RECOVER_KNOCKOUT;
     }
 }
