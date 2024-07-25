@@ -327,12 +327,12 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                code == UserCmd.BURN_RANGE_LIQ_LP;
     }
 
-    /// @notice Validate that the pool is stable swap and bid and ask ticks are in correct range for providing concentrated liquidity.
-    /// @dev This is a helper function to validate the concentrated liquidity minting and burning.
-    /// @param base The base token address.
-    /// @param quote The quote token address.
-    /// @param poolIdx The pool index.
-    /// @param pool The pool specification.
+    /* @notice Validate that the pool is stable swap and bid and ask ticks are in correct range for providing concentrated liquidity.
+     * @dev This is a helper function to validate the concentrated liquidity minting and burning.
+     * @param base The base token address.
+     * @param quote The quote token address.
+     * @param poolIdx The pool index.
+     * @param pool The pool specification. */
     function _calculateBidAskTick (address base, address quote, uint256 poolIdx,
                       PoolSpecs.Pool memory pool)
         internal view returns (int24 bidTick, int24 askTick) {
@@ -352,9 +352,6 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                 priceRootAtBidTick = uint128(pool.priceFloor_ * 10**((baseTokenDecimal - quoteTokenDecimal)/2));
                 priceRootAtAskTick = uint128(pool.priceCeiling_ * 10**((baseTokenDecimal - quoteTokenDecimal)/2));
             }
-
-            require(priceRootAtBidTick == pool.priceFloor_, "INVALID BID TICK");
-            require(priceRootAtAskTick == pool.priceCeiling_, "INVALID ASK TICK");
 
             bidTick = TickMath.getTickAtSqrtRatio(priceRootAtBidTick);
             askTick = TickMath.getTickAtSqrtRatio(priceRootAtAskTick);
