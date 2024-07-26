@@ -23,7 +23,6 @@ contract CrocLpErc20 is ERC20, ICrocLpConduit {
                              int24 lowerTick, int24 upperTick, uint128 seeds,
                              uint72) public override returns (bool) {
         require(pool == poolHash, "Wrong pool");
-        require(lowerTick == 0 && upperTick == 0, "Non-Ambient LP Deposit");
         require(msg.sender == factory, 'A'); // sufficient check
         _mint(sender, seeds);
         return true;
@@ -33,7 +32,6 @@ contract CrocLpErc20 is ERC20, ICrocLpConduit {
                               int24 lowerTick, int24 upperTick, uint128 seeds,
                               uint72) public override returns (bool) {
         require(pool == poolHash, "Wrong pool");
-        require(lowerTick == 0 && upperTick == 0, "Non-Ambient LP Deposit");
         require(msg.sender == factory, 'A'); // sufficient check
         _burn(sender, seeds);
         return true;
