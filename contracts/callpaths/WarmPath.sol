@@ -88,7 +88,13 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                        int24 bidTick, int24 askTick, uint128 liq,
                        uint128 limitLower, uint128 limitHigher,
                        address lpConduit)
-        private returns (int128, int128) {   
+        private returns (int128, int128) {
+        
+        // Allow Harvest on any pool
+        if (code == UserCmd.HARVEST_LP) {
+            return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
+                        limitLower, limitHigher);
+        }
         // Allow concentrated liquidity actions only on stable swap pools
         if (poolIdx == stableSwapPoolIdx_) {
             PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
@@ -112,33 +118,31 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             } else if (code == UserCmd.BURN_RANGE_QUOTE_LP) {
                 return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
                             limitLower, limitHigher);
+            }
+        // Allow ambient liquidity actions only on non-stable swap pools
+        } else {
+            if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
+                return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
+            } else if (code == UserCmd.MINT_AMBIENT_BASE_LP) {
+                return mintAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
+                            limitLower, limitHigher);
+            } else if (code == UserCmd.MINT_AMBIENT_QUOTE_LP) {
+                return mintAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
+                            limitLower, limitHigher);   
+            } else if (code == UserCmd.BURN_AMBIENT_LIQ_LP) {
+                return burnAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
+            } else if (code == UserCmd.BURN_AMBIENT_BASE_LP) {
+                return burnAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
+                            limitLower, limitHigher);
+            } else if (code == UserCmd.BURN_AMBIENT_QUOTE_LP) {
+                return burnAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
+                            limitLower, limitHigher);
             } else if (code == UserCmd.HARVEST_LP) {
                 return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
-                           limitLower, limitHigher);
+                            limitLower, limitHigher);
             }
         }
-        else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
-            return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
-        } else if (code == UserCmd.MINT_AMBIENT_BASE_LP) {
-            return mintAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
-                        limitLower, limitHigher);
-        } else if (code == UserCmd.MINT_AMBIENT_QUOTE_LP) {
-            return mintAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
-                        limitLower, limitHigher);   
-        } else if (code == UserCmd.BURN_AMBIENT_LIQ_LP) {
-            return burnAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
-        } else if (code == UserCmd.BURN_AMBIENT_BASE_LP) {
-            return burnAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
-                        limitLower, limitHigher);
-        } else if (code == UserCmd.BURN_AMBIENT_QUOTE_LP) {
-            return burnAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
-                        limitLower, limitHigher);
-        } else if (code == UserCmd.HARVEST_LP) {
-            return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
-                        limitLower, limitHigher);
-        } else {
-            revert("Invalid command");
-        }
+        revert("Invalid command");
     }
 
 /* @notice Mints liquidity as a concentrated liquidity range order.
