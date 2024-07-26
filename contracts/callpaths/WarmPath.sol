@@ -88,49 +88,54 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                        int24 bidTick, int24 askTick, uint128 liq,
                        uint128 limitLower, uint128 limitHigher,
                        address lpConduit)
-        private returns (int128, int128) {
-        // Override the bid and ask ticks for stable swap pools
+        private returns (int128, int128) {   
+        // Allow concentrated liquidity actions only on stable swap pools
         if (poolIdx == stableSwapPoolIdx_) {
             PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
+            // Override the bid and ask ticks for stable swap pools
             (bidTick, askTick) = _calculateBidAskTick(base, quote, pool.head_);
-        }
-        if (code == UserCmd.MINT_RANGE_LIQ_LP) {
+            if (code == UserCmd.MINT_RANGE_LIQ_LP) {
             return mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
                         limitLower, limitHigher);
-        } else if (code == UserCmd.MINT_RANGE_BASE_LP) {
-            return mintConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
+            } else if (code == UserCmd.MINT_RANGE_BASE_LP) {
+                return mintConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
+                            limitLower, limitHigher);
+            } else if (code == UserCmd.MINT_RANGE_QUOTE_LP) {
+                return mintConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
+                            limitLower, limitHigher);
+            } else if (code == UserCmd.BURN_RANGE_LIQ_LP) {
+                return burnConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
+                            limitLower, limitHigher);
+            } else if (code == UserCmd.BURN_RANGE_BASE_LP) {
+                return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
+                            limitLower, limitHigher);
+            } else if (code == UserCmd.BURN_RANGE_QUOTE_LP) {
+                return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
+                            limitLower, limitHigher);
+            } else if (code == UserCmd.HARVEST_LP) {
+                return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
                            limitLower, limitHigher);
-        } else if (code == UserCmd.MINT_RANGE_QUOTE_LP) {
-            return mintConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
-                           limitLower, limitHigher);
-        } else if (code == UserCmd.BURN_RANGE_LIQ_LP) {
-            return burnConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
-                        limitLower, limitHigher);
-        } else if (code == UserCmd.BURN_RANGE_BASE_LP) {
-            return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
-                           limitLower, limitHigher);
-        } else if (code == UserCmd.BURN_RANGE_QUOTE_LP) {
-            return burnConcentratedQty(base, quote, poolIdx, bidTick, askTick, false, liq, lpConduit,
-                           limitLower, limitHigher);
-        } else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
-            return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
+            }
+        }
+        else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
+        return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
         } else if (code == UserCmd.MINT_AMBIENT_BASE_LP) {
             return mintAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
-                           limitLower, limitHigher);
+                        limitLower, limitHigher);
         } else if (code == UserCmd.MINT_AMBIENT_QUOTE_LP) {
             return mintAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
-                           limitLower, limitHigher);
+                        limitLower, limitHigher);
             
         } else if (code == UserCmd.BURN_AMBIENT_LIQ_LP) {
             return burnAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
         } else if (code == UserCmd.BURN_AMBIENT_BASE_LP) {
             return burnAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
-                           limitLower, limitHigher);
+                        limitLower, limitHigher);
         } else if (code == UserCmd.BURN_AMBIENT_QUOTE_LP) {
             return burnAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
-                           limitLower, limitHigher);
+                        limitLower, limitHigher);
         } else if (code == UserCmd.HARVEST_LP) {
-            return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
+                return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
                            limitLower, limitHigher);
         } else {
             revert("Invalid command");
@@ -156,7 +161,6 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                    int24 bidTick, int24 askTick, uint128 liq, address lpConduit, 
                    uint128 limitLower, uint128 limitHigher) internal returns
         (int128, int128) {
-        require(poolIdx == stableSwapPoolIdx_, "NOT STABLE SWAP");
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
         verifyPermitMint(pool, base, quote, bidTick, askTick, liq);
 
@@ -183,7 +187,6 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                    int24 bidTick, int24 askTick, uint128 liq, address lpConduit, 
                    uint128 limitLower, uint128 limitHigher)
         internal returns (int128, int128) {
-        require(poolIdx == stableSwapPoolIdx_, "NOT STABLE SWAP");
         PoolSpecs.PoolCursor memory pool = queryPool(base, quote, poolIdx);
         verifyPermitBurn(pool, base, quote, bidTick, askTick, liq);
         
@@ -260,7 +263,6 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                       uint128 qty, address lpConduit, uint128 limitLower,
                       uint128 limitHigher) internal
         returns (int128, int128) {
-        require(poolIdx == stableSwapPoolIdx_, "NOT STABLE SWAP");
         uint128 liq = sizeAddLiq(base, quote, poolIdx, qty, bidTick, askTick, inBase);
         (int128 baseFlow, int128 quoteFlow) =
             mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
@@ -313,7 +315,6 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
                       uint128 qty, address lpConduit,
                       uint128 limitLower, uint128 limitHigher)
         internal returns (int128, int128) {
-        require(poolIdx == stableSwapPoolIdx_, "NOT STABLE SWAP");
         bytes32 poolKey = PoolSpecs.encodeKey(base, quote, poolIdx);
         CurveMath.CurveState memory curve = snapCurve(poolKey);
         uint128 liq = Chaining.sizeConcLiq(qty, false, curve.priceRoot_,
