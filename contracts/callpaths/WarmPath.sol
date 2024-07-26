@@ -95,7 +95,7 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             // Override the bid and ask ticks for stable swap pools
             (bidTick, askTick) = _calculateBidAskTick(base, quote, pool.head_);
             if (code == UserCmd.MINT_RANGE_LIQ_LP) {
-            return mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
+                return mintConcentratedLiq(base, quote, poolIdx, bidTick, askTick, liq, lpConduit,
                         limitLower, limitHigher);
             } else if (code == UserCmd.MINT_RANGE_BASE_LP) {
                 return mintConcentratedQty(base, quote, poolIdx, bidTick, askTick, true, liq, lpConduit,
@@ -118,14 +118,13 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             }
         }
         else if (code == UserCmd.MINT_AMBIENT_LIQ_LP) {
-        return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
+            return mintAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
         } else if (code == UserCmd.MINT_AMBIENT_BASE_LP) {
             return mintAmbientQty(base, quote, poolIdx, true, liq, lpConduit,
                         limitLower, limitHigher);
         } else if (code == UserCmd.MINT_AMBIENT_QUOTE_LP) {
             return mintAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
-                        limitLower, limitHigher);
-            
+                        limitLower, limitHigher);   
         } else if (code == UserCmd.BURN_AMBIENT_LIQ_LP) {
             return burnAmbientLiq(base, quote, poolIdx, liq, lpConduit, limitLower, limitHigher);
         } else if (code == UserCmd.BURN_AMBIENT_BASE_LP) {
@@ -135,8 +134,8 @@ contract WarmPath is MarketSequencer, SettleLayer, ProtocolAccount {
             return burnAmbientQty(base, quote, poolIdx, false, liq, lpConduit,
                         limitLower, limitHigher);
         } else if (code == UserCmd.HARVEST_LP) {
-                return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
-                           limitLower, limitHigher);
+            return harvest(base, quote, poolIdx, bidTick, askTick, lpConduit,
+                        limitLower, limitHigher);
         } else {
             revert("Invalid command");
         }
