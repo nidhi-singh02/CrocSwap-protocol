@@ -114,7 +114,7 @@ module.exports = {
       accounts: [process.env.WALLET_KEY],
     },
     bartio: {
-      url: "https://bartio-eth-rpc-internal.berachain-devnet.com/",
+      url: "https://bartio.rpc.berachain.com",
       chainId: 80084,
       gasPrice: 10000000000,
       accounts: [process.env.WALLET_KEY],
