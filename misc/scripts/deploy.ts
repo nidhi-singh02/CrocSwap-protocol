@@ -286,7 +286,7 @@ async function deploy() {
 
     await initPoolTemplate(policy);
 
-    return
+    process.exit(0);
 }
 
 deploy();
